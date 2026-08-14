@@ -8,11 +8,17 @@ format:
     theme: simple
     transition: slide
     slide-number: true
+    menu:
+      side: left             # Menu trượt ra từ bên trái
+      width: wide            # Bề rộng menu
+      numbers: true          # Hiện số slide
+      markers: true          # Hiện đánh dấu slide đang xem
+      custom: false
     show-slide-number: all
     controls: true
     toc: true
     toc-depth: 1
-    toc-title: "MỤC LỤC BÁO CÁO"
+    #toc-title: "MỤC LỤC BÁO CÁO"
     width: 1280
     height: 720
     embed-resources: true

@@ -164,6 +164,7 @@ cat("Post (thô):", n_post_raw, "\n")
 cat("Pre n (sau khi loại bản ghi trùng) =", n_pre_clean, "\n")
 cat("Post n =", n_post_clean, "\n")
 cat("Số cặp matched thành công:", n_matched, "\n")
+```
 
 :::
 
