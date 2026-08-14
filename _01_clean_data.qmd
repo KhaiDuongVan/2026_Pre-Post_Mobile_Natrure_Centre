@@ -122,3 +122,48 @@ data.frame(
             locations = cells_body(rows = Buoc == "6. Cặp Pre–Post ghép thành công")) %>%
   tab_source_note(source_note = md("*Số liệu lấy trực tiếp từ dữ liệu đã xử lý.*"))
 ```
+
+## Tóm tắt pipeline làm sạch dữ liệu
+
+```{r data-pipeline-summary}
+# Kiểm tra nếu thư viện chưa load thì load
+if (!require(gt)) install.packages("gt")
+library(gt)
+library(dplyr)
+
+data.frame(
+  Buoc = c("1. Dữ liệu thô nạp vào", "2. Bản ghi Pre (thô)",
+           "3. Bản ghi Pre (sau loại trùng lặp)", "4. Bản ghi Post (thô)",
+           "5. Bản ghi Post (sau loại bản ghi lỗi công thức)",
+           "6. Cặp Pre–Post ghép thành công"),
+  Ket_qua = c(
+    paste0(n_raw_rows, " dòng × ", n_raw_cols, " cột"),
+    paste0(n_pre_raw, " bản ghi"),
+    paste0(n_pre_clean, " bản ghi"),
+    paste0(n_post_raw, " bản ghi"),
+    paste0(n_post_clean, " bản ghi"),
+    paste0(n_matched, " cặp")
+  )
+) %>%
+  gt() %>%
+  tab_header(title = md("**Pipeline nạp & làm sạch dữ liệu**")) %>%
+  cols_label(Buoc = "Bước xử lý", Ket_qua = "Kết quả") %>%
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_body(rows = Buoc == "6. Cặp Pre–Post ghép thành công")) %>%
+  tab_source_note(source_note = md("*Số liệu lấy trực tiếp từ dữ liệu đã xử lý.*"))
+```
+
+::: {.callout-note collapse="true"}
+## 🔍 Log chi tiết từng bước (bấm để xem)
+
+```{r pipeline-detail-log}
+#| results: 'asis'
+cat("Tổng dòng:", n_raw_rows, "| Tổng cột:", n_raw_cols, "\n")
+cat("Pre (thô):", n_pre_raw, "\n")
+cat("Post (thô):", n_post_raw, "\n")
+cat("Pre n (sau khi loại bản ghi trùng) =", n_pre_clean, "\n")
+cat("Post n =", n_post_clean, "\n")
+cat("Số cặp matched thành công:", n_matched, "\n")
+
+:::
+

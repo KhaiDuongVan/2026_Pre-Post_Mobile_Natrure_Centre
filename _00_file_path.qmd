@@ -15,7 +15,7 @@ library(kableExtra)
 library(scales)
 library(broom)
 library(gt)
-
+library(here)
 svw_green  <- "#2E7D32"
 svw_orange <- "#E65100"
 svw_pre    <- svw_orange
@@ -66,9 +66,9 @@ paired_test <- function(pre_vec, post_vec, var_name = "") {
   )
 }
 
-path_mnc <- "E:/OneDrive - Save Vietnam's Wildlife/Research/Data sheet/26_Mobile_Nature_Centre_Ninh_Binh.csv"
+ path_mnc <- here("26_Mobile_Nature_Centre_Ninh_Binh.csv")
 
 stopifnot(
-  "Không tìm thấy file dữ liệu — kiểm tra lại path_mnc phía trên" = file.exists(path_mnc)
+  "Không tìm thấy file dữ liệu – kiểm tra lại path_mnc phía trên" = file.exists(path_mnc)
 )
 ```
