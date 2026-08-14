@@ -1,0 +1,124 @@
+# PHẦN 1: QUY TRÌNH NẠP VÀ LÀM SẠCH DỮ LIỆU {#sec-clean}
+```{r clean-data-processing}
+#| include: false
+
+# 1. Nạp dữ liệu thô
+raw <- readr::read_csv(path_mnc, show_col_types = FALSE)
+
+n_raw_rows <- nrow(raw)
+n_raw_cols <- ncol(raw)
+n_pre_raw  <- sum(raw[["GIAI ĐOẠN KHẢO SÁT:"]] == "pre",   na.rm = TRUE)
+n_post_raw <- sum(raw[["GIAI ĐOẠN KHẢO SÁT:"]] == "after", na.rm = TRUE)
+
+# 2. Làm sạch ID người dùng
+raw <- raw %>%
+  mutate(user_id = str_replace_all(as.character(user_id), "\\s+", ""))
+
+# 3. Lọc & làm sạch dữ liệu Pre
+pre_raw <- raw %>%
+  filter(`GIAI ĐOẠN KHẢO SÁT:` == "pre") %>%
+  arrange(CreationDate) %>%
+  group_by(user_id) %>%
+  slice_tail(n = 1) %>%
+  ungroup() %>%
+  transmute(
+    user_id,
+    gender   = .data[["Giới tính"]],
+    age_grp  = .data[["Xin cho biết độ tuổi của anh/chị"]],
+    s_q7     = as.numeric(.data[["s_q7"]]),
+    s_q9     = as.numeric(.data[["s_q9"]]),
+    s_q10    = as.numeric(.data[["s_q10"]]),
+    s_q11    = as.numeric(.data[["s_q11"]]),
+    s_q14    = as.numeric(.data[["s_q14"]]),
+    s_q15    = as.numeric(.data[["s_q15"]]),
+    s_q16    = as.numeric(.data[["s_q16"]]),
+    s_q17    = as.numeric(.data[["s_q17"]]),
+    s_q18    = as.numeric(.data[["s_q18"]]),
+    s_q19    = as.numeric(.data[["s_q19"]]),
+    total_score_pre = as.numeric(.data[["total_score_pre"]]),
+    pre_percent = (total_score_pre / 14) * 100
+  )
+
+n_pre_clean <- nrow(pre_raw)
+
+# 4. Lọc & làm sạch dữ liệu Post
+stale_post_ids <- c("Thơ7543", "Hh4321")
+
+post_scored <- raw %>%
+  filter(`GIAI ĐOẠN KHẢO SÁT:` == "after", !(user_id %in% stale_post_ids)) %>%
+  select(
+    user_id,
+    gender = `Giới tính`,
+    s_q1, s_q2, s_q3, s_q4, s_q5, s_q6,
+    s_q7b, s_q8b, s_q9b, s_q10b, s_q11b, s_q12b,
+    s_q13b, s_q14b, s_q15b, s_q16b, s_q17b, s_q18b,
+    s_q19b, s_q20b,
+    total_score_post, post_percent, diff_score
+  ) %>%
+  mutate(post_percent_correct = (total_score_post / 26.5) * 100)
+
+max_post_score <- max(raw$total_score_post, na.rm = TRUE)
+n_post_clean   <- nrow(post_scored)
+
+# 5. Ghép cặp Pre-Post
+paired_df <- pre_raw %>%
+  inner_join(
+    post_scored %>% select(-gender),
+    by = "user_id",
+    suffix = c("_pre", "_post")
+  )
+
+n_matched <- nrow(paired_df)
+
+stopifnot("Số cặp phải là 18 theo phân tích đã xác nhận" = n_matched == 18)
+
+# 6. Tính toán điểm chuẩn hoá Kiến thức và Hành động
+pre_know_cols     <- c("s_q10", "s_q11", "s_q14", "s_q15", "s_q16", "s_q17", "s_q18")
+pre_know_max_vec  <- c(1, 1, 1, 1, 2, 1, 1)
+MAX_KNOW_PRE      <- sum(pre_know_max_vec)
+
+post_know_cols    <- c("s_q3", "s_q4", "s_q5", "s_q6", "s_q8b", "s_q9b", "s_q10b", "s_q11b", "s_q12b")
+post_know_max_vec <- c(1, 4, 1, 1, 1, 1, 1, 1, 1)
+MAX_KNOW_POST     <- sum(post_know_max_vec)
+
+paired_df <- paired_df %>%
+  mutate(
+    know_pre_raw   = rowSums(across(all_of(pre_know_cols)),  na.rm = TRUE),
+    know_pre_pct   = (know_pre_raw  / MAX_KNOW_PRE)  * 100,
+    know_post_raw  = rowSums(across(all_of(post_know_cols)), na.rm = TRUE),
+    know_post_pct  = (know_post_raw / MAX_KNOW_POST) * 100,
+    know_gain_pure = know_post_pct - know_pre_pct,
+
+    act_pre_pct      = (s_q19 / 5) * 100,
+    act_post_new_pct = ((s_q13b + s_q14b) / 8) * 100,
+    act_gain_new     = act_post_new_pct - act_pre_pct,
+
+    action_post      = s_q12b * 100,
+    commit_post      = s_q13b * 100,
+    know_total_post  = rowMeans(select(., s_q3, s_q8b, s_q6, s_q9b, s_q10b), na.rm = TRUE) * 100,
+    know_gain        = know_total_post - rowMeans(select(., s_q10, s_q14, s_q15, s_q16, s_q17), na.rm = TRUE) * 100,
+    spillover_score  = as.numeric(s_q19)
+  )
+#| echo: false
+
+data.frame(
+  Buoc = c("1. Dữ liệu thô nạp vào", "2. Bản ghi Pre (thô)",
+           "3. Bản ghi Pre (sau loại trùng lặp)", "4. Bản ghi Post (thô)",
+           "5. Bản ghi Post (sau loại bản ghi lỗi công thức)",
+           "6. Cặp Pre–Post ghép thành công"),
+  Ket_qua = c(
+    paste0(n_raw_rows, " dòng × ", n_raw_cols, " cột"),
+    paste0(n_pre_raw, " bản ghi"),
+    paste0(n_pre_clean, " bản ghi"),
+    paste0(n_post_raw, " bản ghi"),
+    paste0(n_post_clean, " bản ghi"),
+    paste0(n_matched, " cặp")
+  )
+) %>%
+  gt() %>%
+  tab_header(title = md("**Pipeline nạp & làm sạch dữ liệu**")) %>%
+  cols_label(Buoc = "Bước xử lý", Ket_qua = "Kết quả") %>%
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_body(rows = Buoc == "6. Cặp Pre–Post ghép thành công")) %>%
+  tab_source_note(source_note = md("*Số liệu lấy trực tiếp từ dữ liệu đã xử lý.*"))
+```

@@ -1,0 +1,158 @@
+# PHẦN 6: TỔNG HỢP KẾT QUẢ VÀ CHỈ SỐ {#sec-summary}
+
+Phần này tổng hợp toàn bộ các chỉ số quan trọng từ Phần 1 đến Phần 5, cung cấp cái nhìn toàn diện về hiệu quả của chương trình truyền thông.
+
+```{r summary-prep-data}
+#| include: false
+
+# 1. Tạo bảng Chỉ số Tổng quan (Bao gồm Phần 1 và Phần 2)
+
+tong_hop_chi_so <- bind_rows(
+  # Dữ liệu Phần 1: Cỡ mẫu & Thông tin chung
+  tibble(
+    `Chỉ số` = "Cỡ mẫu ghép cặp Pre-Post (n)",
+    `Pre (%)` = NA_real_,
+    `Post (%)` = NA_real_,
+    `Chênh lệch (đpt)` = NA_real_,
+    `p-value` = NA_real_,
+    `Cohen's d` = NA_real_,
+    `Kết luận` = paste0("N = ", nrow(paired_df), " cặp khớp hoàn chỉnh")
+  ),
+  
+  # Dữ liệu Phần 2: Điểm số tổng hợp (lấy từ total_result)
+  total_result %>%
+    transmute(
+      `Chỉ số` = Variable,
+      `Pre (%)` = Mean_pre, 
+      `Post (%)` = Mean_post, 
+      `Chênh lệch (đpt)` = Delta,
+      `p-value` = p_value, 
+      `Cohen's d` = Effect_d, 
+      `Kết luận` = Interpretation
+    )
+)
+```
+# 6.1. Bảng Tổng hợp Các Chỉ Số Hiệu Quả (KAP)
+```{r}
+#| echo: false
+
+# Gọi biến và dùng hàm gt() để hiển thị bảng ra HTML
+tong_hop_chi_so %>%
+  gt() %>%
+  tab_header(
+    title = md("**Tổng hợp Kết quả và Chỉ số Tác động Chương trình**"),
+    subtitle = "So sánh đánh giá Trước (Pre) và Sau (Post) tập huấn"
+  ) %>%
+  cols_label(
+    `Chỉ số` = "Chỉ số đánh giá",
+    `Pre (%)` = "Pre (%)",
+    `Post (%)` = "Post (%)",
+    `Chênh lệch (đpt)` = "Độ tăng (+)",
+    `p-value` = "Giá trị p",
+    `Cohen's d` = "Mức độ tác động (d)",
+    `Kết luận` = "Đánh giá / Kết luận"
+  ) %>%
+  fmt_number(columns = c(`Pre (%)`, `Post (%)`, `Chênh lệch (đpt)`), decimals = 1) %>%
+  fmt_number(columns = `Cohen's d`, decimals = 2) %>%
+  fmt_number(columns = `p-value`, decimals = 4) %>%
+  sub_missing(columns = everything(), missing_text = "—") %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(columns = `Chỉ số`)
+  )
+```
+# 6.2. Top 3 chủ đề cải thiện mạnh nhất (Phần 3)
+```{r}
+#| echo: false
+
+top_chu_de_df <- topic_table %>%
+  arrange(desc(Delta)) %>%
+  slice_head(n = 3) %>%
+  transmute(
+    `Chủ đề` = Variable, 
+    `Pre (%)` = Mean_pre, 
+    `Post (%)` = Mean_post,
+    `Chênh lệch (đpt)` = Delta, 
+    `p-value` = p_value, 
+    `Kết luận` = Interpretation
+  )
+
+# Hiển thị bảng Top 3
+top_chu_de_df %>%
+  gt() %>%
+  tab_header(title = md("**Top 3 Chủ Đề Có Mức Độ Tăng Điểm Cao Nhất**")) %>%
+  cols_label(
+    `Chủ đề` = "Chủ đề câu hỏi",
+    `Pre (%)` = "Pre (%)",
+    `Post (%)` = "Post (%)",
+    `Chênh lệch (đpt)` = "Độ tăng (+)",
+    `p-value` = "Giá trị p",
+    `Kết luận` = "Kết luận"
+  ) %>%
+  fmt_number(columns = c(`Pre (%)`, `Post (%)`, `Chênh lệch (đpt)`), decimals = 1) %>%
+  fmt_number(columns = `p-value`, decimals = 4)
+```
+# 6.3. Khác biệt giới tính (Phần 4)
+```{r}
+#| echo: false
+
+gioi_tinh_df <- gain_summary %>%
+  transmute(
+    `Giới tính` = ifelse(gender == "female", "Nữ", "Nam"),
+    n, 
+    `Normalized gain TB` = round(mean_gain, 3), 
+    `SD` = round(sd_gain, 3)
+  )
+
+gioi_tinh_p_value <- round(wilcox_gender_test$p.value, 4)
+
+# Hiển thị bảng Giới tính
+gioi_tinh_df %>%
+  gt() %>%
+  tab_header(
+    title = md("**So sánh Mức Tăng Điểm Chuẩn Hóa Theo Giới Tính**"),
+    subtitle = paste0("Kiểm định Wilcoxon: p = ", gioi_tinh_p_value, 
+                      ifelse(gioi_tinh_p_value >= 0.05, " (Không có sự khác biệt có ý nghĩa thống kê)", " (Có sự khác biệt)"))
+  ) %>%
+  cols_label(
+    `Giới tính` = "Giới tính",
+    n = "Cỡ mẫu (n)",
+    `Normalized gain TB` = "Gain TB (g)",
+    `SD` = "Độ lệch chuẩn (SD)"
+  )
+```
+# 6.4. Tổng hợp 5 mô hình hồi quy (Phần 5)
+```{r}
+#| echo: false
+
+model_fit_all <- bind_rows(
+  model_fit_summary,
+  glance(model_ols_action) %>%
+    transmute(
+      Mo_hinh = "Mức tăng cam kết ~ Mức tăng kiến thức thuần túy",
+      N = nobs, 
+      R2 = r.squared, 
+      R2_dc = adj.r.squared,
+      F_stat = statistic, 
+      p_value = p.value,
+      Ket_luan = ifelse(p.value < 0.05, "Có ý nghĩa", "Không có ý nghĩa")
+    )
+)
+
+# Hiển thị bảng Hồi quy
+model_fit_all %>%
+  gt() %>%
+  tab_header(
+    title = md("**So Sánh Mức Độ Giải Thích (R²) Của Tất Cả Các Mô Hình Hồi Quy**")
+  ) %>%
+  cols_label(
+    Mo_hinh = "Tên Mô Hình", N = "n", R2 = "R²", R2_dc = "R² Hiệu chỉnh",
+    F_stat = "F", p_value = "Giá trị p", Ket_luan = "Đánh giá"
+  ) %>%
+  fmt_number(columns = c(R2, R2_dc, F_stat), decimals = 3) %>%
+  fmt_number(columns = p_value, decimals = 4) %>%
+  tab_style(
+    style = cell_text(weight = "bold", color = "#C62828"),
+    locations = cells_body(columns = Ket_luan, rows = Ket_luan == "Không có ý nghĩa")
+  )
+```

@@ -1,0 +1,12 @@
+# PHẦN 8: XUẤT DỮ LIỆU {#sec-export}
+```{r export}
+write.csv(paired_df,   "mnc_paired_clean.csv",  row.names = FALSE)
+write.csv(topic_table, "mnc_topic_results.csv", row.names = FALSE)
+write.csv(pre_raw,     "mnc_pre_clean.csv",     row.names = FALSE)
+write.csv(post_scored, "mnc_post_clean.csv",    row.names = FALSE)
+cat("✓ Đã xuất 4 file CSV\n")
+```
+
+---
+*Tạo bởi Quarto – Mobile Nature Centre Evaluation 2026 | SVW*
+

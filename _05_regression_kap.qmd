@@ -1,0 +1,234 @@
+# PHẦN 5: MÔ HÌNH HỒI QUY KAP {#sec-regression}
+```{r regression-setup}
+#| include: false
+
+# 1. Hàm dựng bảng kết quả hồi quy chuẩn hóa
+reg_table <- function(model, title, subtitle, term_labels = NULL) {
+  td <- tidy(model)
+  if (!is.null(term_labels)) {
+    td <- td %>% mutate(term = dplyr::recode(term, !!!term_labels))
+  }
+  gl <- glance(model)
+
+  td %>%
+    gt() %>%
+    tab_header(title = md(title), subtitle = subtitle) %>%
+    cols_label(
+      term      = "Biến độc lập", 
+      estimate  = "Hệ số (β)", 
+      std.error = "Sai số chuẩn (SE)",
+      statistic = "Giá trị t", 
+      p.value   = "Giá trị p"
+    ) %>%
+    fmt_number(columns = c(estimate, std.error, statistic), decimals = 3) %>%
+    fmt_number(columns = p.value, decimals = 4) %>%
+    tab_style(style = cell_text(weight = "bold"), locations = cells_body(rows = p.value < 0.05)) %>%
+    tab_source_note(source_note = md(paste0(
+      "*N = ", gl$nobs, ". R² = ", round(gl$r.squared, 4),
+      ", R² hiệu chỉnh = ", round(gl$adj.r.squared, 4),
+      ", F(", gl$df, ", ", gl$df.residual, ") = ", round(gl$statistic, 3),
+      ", p = ", round(gl$p.value, 4),
+      ifelse(gl$p.value >= 0.05, " — mô hình chung KHÔNG có ý nghĩa thống kê.*", " — mô hình chung có ý nghĩa thống kê.*")
+    )))
+}
+
+# 2. Khởi tạo dữ liệu hồi quy
+reg_df <- paired_df %>% filter(gender %in% c("female", "male"))
+
+model_action_total <- lm(action_post ~ know_total_post + gender, data = reg_df)
+model_action_topics <- lm(
+  action_post ~ know_biodiv + know_extinct + gender,
+  data = reg_df %>% mutate(know_biodiv = s_q3 * 100, know_extinct = s_q8b * 100)
+)
+model_commit   <- lm(commit_post ~ know_gain + gender, data = reg_df)
+model_spillover <- lm(spillover_score ~ know_gain + gender, data = reg_df)
+```
+# 5.1. Các mô hình hồi quy dự đoán hành động & cam kết
+```{r}
+#| echo: false
+
+reg_table(
+  model_action_total,
+  "**Hành động Post ~ Kiến thức tổng hợp Post + Giới tính**",
+  "Biến phụ thuộc: action_post (điểm hành động bảo vệ ĐVHD, câu 12b)",
+  term_labels = c(
+    "(Intercept)"     = "Hằng số",
+    "know_total_post" = "Kiến thức tổng hợp (Post)",
+    "gendermale"      = "Giới tính (Nam so với Nữ)"
+  )
+)
+#| echo: false
+
+reg_table(
+  model_action_topics,
+  "**Hành động Post ~ Kiến thức Đa dạng SH + Tuyệt chủng + Giới tính**",
+  "Biến phụ thuộc: action_post (điểm hành động bảo vệ ĐVHD, câu 12b)",
+  term_labels = c(
+    "(Intercept)"  = "Hằng số",
+    "know_biodiv"  = "Kiến thức Đa dạng sinh học (Post)",
+    "know_extinct" = "Kiến thức Tuyệt chủng (Post)",
+    "gendermale"   = "Giới tính (Nam so với Nữ)"
+  )
+)
+#| echo: false
+
+reg_table(
+  model_commit,
+  "**Cam kết hành động Post ~ Mức tăng kiến thức + Giới tính**",
+  "Biến phụ thuộc: commit_post (điểm cam kết hành động, câu 13b)",
+  term_labels = c(
+    "(Intercept)" = "Hằng số",
+    "know_gain"   = "Mức tăng kiến thức (know_gain)",
+    "gendermale"  = "Giới tính (Nam so với Nữ)"
+  )
+)
+#| echo: false
+
+reg_table(
+  model_spillover,
+  "**Ý định lan tỏa ~ Mức tăng kiến thức + Giới tính**",
+  "Biến phụ thuộc: spillover_score (xem lưu ý về thang điểm s_q19 ở Phần 1)",
+  term_labels = c(
+    "(Intercept)" = "Hằng số",
+    "know_gain"   = "Mức tăng kiến thức (know_gain)",
+    "gendermale"  = "Giới tính (Nam so với Nữ)"
+  )
+)
+```
+# 5.2. So sánh độ phù hợp của các mô hình (Model Fit)
+```{r}
+#| echo: false
+
+model_fit_summary <- bind_rows(
+  glance(model_action_total)  %>% mutate(Mo_hinh = "Hành động ~ Kiến thức tổng hợp"),
+  glance(model_action_topics) %>% mutate(Mo_hinh = "Hành động ~ Đa dạng SH + Tuyệt chủng"),
+  glance(model_commit)        %>% mutate(Mo_hinh = "Cam kết ~ Mức tăng kiến thức"),
+  glance(model_spillover)     %>% mutate(Mo_hinh = "Lan tỏa ~ Mức tăng kiến thức")
+) %>%
+  transmute(
+    Mo_hinh, N = nobs,
+    R2 = r.squared, R2_dc = adj.r.squared,
+    F_stat = statistic, p_value = p.value,
+    Ket_luan = ifelse(p.value < 0.05, "Có ý nghĩa", "Không có ý nghĩa")
+  )
+
+model_fit_summary %>%
+  gt() %>%
+  tab_header(
+    title = md("**So sánh mức độ giải thích (R²) của 4 mô hình hồi quy**"),
+    subtitle = "Kiến thức tăng thêm có dự đoán được hành động/cam kết/lan tỏa không?"
+  ) %>%
+  cols_label(
+    Mo_hinh = "Mô hình", N = "n", R2 = "R²", R2_dc = "R² hiệu chỉnh",
+    F_stat = "F", p_value = "Giá trị p", Ket_luan = "Kết luận"
+  ) %>%
+  fmt_number(columns = c(R2, R2_dc, F_stat), decimals = 3) %>%
+  fmt_number(columns = p_value, decimals = 4) %>%
+  tab_style(
+    style = cell_text(weight = "bold", color = "#C62828"),
+    locations = cells_body(columns = Ket_luan)
+  ) %>%
+  tab_source_note(source_note = md("*Tất cả R² hiệu chỉnh đều âm hoặc gần 0 — kiến thức tăng thêm không giải thích được sự khác biệt về hành động/cam kết/lan tỏa giữa các cá nhân.*"))
+#| echo: false
+
+reg_df %>%
+  summarise(
+    Mean_Spillover = mean(spillover_score, na.rm = TRUE),
+    SD_Spillover   = sd(spillover_score, na.rm = TRUE),
+    Min_Spillover  = min(spillover_score, na.rm = TRUE),
+    Max_Spillover  = max(spillover_score, na.rm = TRUE)
+  ) %>%
+  kable(digits = 3, caption = "Thống kê mô tả điểm ý định lan tỏa (spillover_score)")
+```
+# 5.3. Hồi quy đa biến mức tăng cam kết hành động (OLS)
+```{r}
+#| echo: false
+
+clean_df <- paired_df %>% filter(know_gain_pure > -30)
+
+cor_res <- cor.test(
+  clean_df$know_gain_pure, clean_df$act_gain_new,
+  method = "spearman", exact = FALSE
+)
+
+model_ols_action <- lm(act_gain_new ~ know_gain_pure + act_pre_pct, data = clean_df)
+
+tidy(model_ols_action) %>%
+  mutate(term = case_when(
+    term == "(Intercept)"    ~ "Hằng số (Intercept)",
+    term == "know_gain_pure" ~ "Mức tăng Kiến thức thuần túy",
+    term == "act_pre_pct"    ~ "Điểm Hành vi bài Pre (%)",
+    TRUE ~ term
+  )) %>%
+  gt() %>%
+  tab_header(
+    title = md("**Mô hình Hồi quy Tuyến tính Đa biến (OLS)**"),
+    subtitle = "Biến phụ thuộc: Mức tăng Ý định/Cam kết Hành động (act_gain_new)"
+  ) %>%
+  cols_label(
+    term = "Biến độc lập", estimate = "Hệ số (β)", std.error = "Sai số chuẩn (SE)",
+    statistic = "Giá trị t", p.value = "Giá trị p"
+  ) %>%
+  fmt_number(columns = c(estimate, std.error, statistic), decimals = 3) %>%
+  fmt_number(columns = p.value, decimals = 4) %>%
+  tab_style(style = cell_text(weight = "bold"), locations = cells_body(rows = p.value < 0.05)) %>%
+  tab_source_note(source_note = md(paste0(
+    "*Ghi chú: N = ", nrow(clean_df), ". Mô hình chung: R² = ",
+    round(summary(model_ols_action)$r.squared, 4), ", R² hiệu chỉnh = ",
+    round(summary(model_ols_action)$adj.r.squared, 4), ".*"
+  )))
+#| echo: false
+
+data.frame(
+  Cap_bien = "Mức tăng kiến thức thuần túy vs. Mức tăng cam kết hành động",
+  N     = nrow(clean_df),
+  Rho   = unname(cor_res$estimate),
+  P_val = cor_res$p.value
+) %>%
+  gt() %>%
+  tab_header(title = md("**Kiểm định Tương quan Hạng Spearman**")) %>%
+  cols_label(
+    Cap_bien = "Cặp biến phân tích", N = "Cỡ mẫu (n)",
+    Rho = "Hệ số tương quan (ρ)", P_val = "Giá trị p"
+  ) %>%
+  fmt_number(columns = Rho, decimals = 3) %>%
+  fmt_number(columns = P_val, decimals = 4) %>%
+  tab_source_note(source_note = md("*Kiểm định hai phía, α = 0.05.*"))
+#| echo: false
+
+data.frame(
+  Chi_so = c("Kiến thức thuần túy (%)", "Ý định / Cam kết hành động (%)"),
+  Pre_Mean  = c(mean(clean_df$know_pre_pct, na.rm = TRUE),  mean(clean_df$act_pre_pct, na.rm = TRUE)),
+  Post_Mean = c(mean(clean_df$know_post_pct, na.rm = TRUE), mean(clean_df$act_post_new_pct, na.rm = TRUE)),
+  Mean_Gain = c(mean(clean_df$know_gain_pure, na.rm = TRUE), mean(clean_df$act_gain_new, na.rm = TRUE))
+) %>%
+  gt() %>%
+  tab_header(title = md("**So sánh Điểm Trung bình KAP Pre-test và Post-test**")) %>%
+  cols_label(
+    Chi_so = "Khía cạnh đánh giá", Pre_Mean = "Trung bình Pre (%)",
+    Post_Mean = "Trung bình Post (%)", Mean_Gain = "Mức tăng trung bình (+%)"
+  ) %>%
+  fmt_number(columns = c(Pre_Mean, Post_Mean, Mean_Gain), decimals = 2)
+```
+# 5.4. Nhận xét kết quả mô hình
+```{r}
+#| echo: false
+#| results: asis
+
+spillover_intercept   <- round(unname(coef(model_spillover)["(Intercept)"]), 2)
+spillover_p_intercept <- round(summary(model_spillover)$coefficients["(Intercept)", "Pr(>|t|)"], 5)
+action_pre_mean       <- round(mean(clean_df$act_pre_pct, na.rm = TRUE), 2)
+
+cat(paste0(
+  "Đánh giá về Ý định Lan tỏa Kiến thức (Spillover Intention) qua mô hình hồi quy tuyến tính ",
+  "cho thấy hằng số nền đạt mức **", spillover_intercept, "** (p = ", spillover_p_intercept, "). ",
+  "Biến gia tăng kiến thức (`know_gain`) không tạo ra tác động biên có ý nghĩa thống kê, phù hợp ",
+  "với việc ý định lan tỏa nền đã ở mức cao trước khi tiếp thu thêm kiến thức.\n\n",
+  "Kết quả kiểm định cho thấy chương trình mang lại hiệu quả kiến thức lớn ",
+  "(d = ", total_result$Effect_d, ", p = ", total_result$p_value, "), điểm kiến thức trung bình ",
+  "tăng từ ", total_result$Mean_pre, "% lên ", total_result$Mean_post, "%. Tuy nhiên mô hình hồi quy ",
+  "cho thấy mức tăng này chưa chuyển hóa thành thay đổi có ý nghĩa thống kê ở điểm hành động, ",
+  "chủ yếu do điểm hành động nền đã ở mức cao (trung bình **", action_pre_mean, "%** ngay từ Pre-test) ",
+  "— một **hiệu ứng trần (ceiling effect)** điển hình.\n"
+))
+```

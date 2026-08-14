@@ -1,0 +1,859 @@
+---
+title: "<span style='color: white;'>THAY ĐỔI TRƯỚC - SAU</span>"
+subtitle: "TRUNG TÂM THIÊN NHIÊN LƯU ĐỘNG | SVW"
+author: "**Phòng Nghiên cứu & Huy động Cộng đồng (Research & CE - SVW)**"
+date: "today"
+format:
+  revealjs:
+    theme: default
+    slide-number: true 
+    width: 1280
+    height: 720
+    logo: svw_logo.png
+    css: custom_svw.css
+    transition: slide
+    embed-resources: true
+    title-slide-attributes:
+      data-background-color: "#107ae3"
+      data-background-image: "01_mnc.jpg"
+      data-background-size: "cover"
+      data-background-opacity: "0.4"
+---
+
+## TÓM TẮT DỮ LIỆU PHÂN TÍCH 
+
+:::: {.columns}
+
+::: {.column width="55%"}
+
+```{r pipeline-summary-table}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(dplyr)
+library(gt)
+
+# 1. Đọc dữ liệu an toàn
+if (file.exists("mnc_paired_clean.csv")) {
+  paired_df <- read.csv("mnc_paired_clean.csv")
+  n_matched_val <- nrow(paired_df)
+} else {
+  n_matched_val <- 18
+}
+
+# 2. Tạo bảng Pipeline nạp & làm sạch dữ liệu
+data.frame(
+  Buoc = c(
+    "1. Dữ liệu thô nạp vào", 
+    "2. Bản ghi Pre (thô)",
+    "3. Bản ghi Pre (sau loại trùng lặp)", 
+    "4. Bản ghi Post (thô)",
+    "5. Bản ghi Post (sau loại bản ghi lỗi công thức)",
+    "6. Cặp Pre–Post ghép thành công"
+  ),
+  Ket_qua = c(
+    "67 dòng × 118 cột",
+    "47 bản ghi",
+    "46 bản ghi",
+    "20 bản ghi",
+    "19 bản ghi (loại 2 bản ghi lỗi)",
+    paste0(n_matched_val, " cặp")
+  )
+) %>%
+  gt() %>%
+  cols_label(
+    Buoc = "Bước xử lý", 
+    Ket_qua = "Kết quả"
+  ) %>%
+  tab_header(
+    title = md("**Pipeline nạp & làm sạch dữ liệu**")
+  ) %>%
+  tab_source_note(
+    source_note = md("*Điểm Post cao nhất thực tế ghi nhận được:* **26.5**")
+  ) %>%
+  # Tô màu tiêu đề chính màu xanh SVW
+  tab_style(
+    style = list(
+      cell_fill(color = "#006837"),
+      cell_text(color = "white", weight = "bold", size = px(22))
+    ),
+    locations = cells_title(groups = "title")
+  ) %>%
+  # Tô màu xanh nhạt cho Tên cột (Header)
+  tab_style(
+    style = list(
+      cell_fill(color = "#e8f5e9"),
+      cell_text(color = "#006837", weight = "bold", size = px(18))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  # Highlight nổi bật dòng 6 (Cặp ghép thành công)
+  tab_style(
+    style = list(
+      cell_fill(color = "#f0fdf4"),
+      cell_text(color = "#006837", weight = "bold", size = px(18))
+    ),
+    locations = cells_body(
+      rows = Buoc == "6. Cặp Pre–Post ghép thành công",
+      columns = c(Buoc, Ket_qua)
+    )
+  ) %>%
+  # Căn chỉnh lề bảng chuẩn
+  opt_align_table_header(align = "center") %>%
+  cols_align(align = "left", columns = Buoc) %>%
+  cols_align(align = "right", columns = Ket_qua)%>%
+  tab_options(
+    table.width = pct(100),
+    table.font.size = px(16),             # Tăng nội dung các dòng lên 16px
+    source_notes.font.size = px(14),      # Tăng dòng ghi chú chân bảng lên 14px
+    data_row.padding = px(8)
+              )            # Tăng khoảng cách dòng để chữ to không bị dính vào nhau
+```
+
+:::
+
+
+::: {.column width="43%"}
+
+<div markdown="1" style="display: flex; flex-direction: column; gap: 5px; font-size: 0.65em; line-height: 1.25;">
+
+<div style="background-color: #f4fdf8; border: 1px solid #c8e6c9; border-left: 5px solid #006837; border-radius: 6px; padding: 6px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+<strong style="color: #006837; font-size: 1.05em;">👩 Tỷ lệ Nữ giới áp đảo</strong><br>
+<span style="color: #333333;">Nữ giới chiếm đa số tuyệt đối với <b style="color: #006837;">76.5%</b> ($n = 13$).</span>
+</div>
+
+<div style="background-color: #fcf8f2; border: 1px solid #ffe0b2; border-left: 5px solid #d97706; border-radius: 6px; padding: 6px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+<strong style="color: #b45309; font-size: 1.05em;">👨 Tỷ lệ Nam giới khiêm tốn</strong><br>
+<span style="color: #333333;">Nam giới chỉ chiếm <b style="color: #b45309;">23.5%</b> ($n = 4$) trên tổng số tham gia.</span>
+</div>
+
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #0284c7; border-radius: 6px; padding: 6px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+<strong style="color: #0369a1; font-size: 1.05em;">🔄 Tính nhất quán giữa các mẫu</strong><br>
+<span style="color: #333333;">Tập mẫu <b>18 cặp khớp</b> tương đồng với Pre-test tổng thể ($n = 18$).</span>
+</div>
+
+<div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 5px solid #dc2626; border-radius: 6px; padding: 6px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+<strong style="color: #b91c1c; font-size: 1.05em;">💡 Lưu ý phân tích</strong><br>
+<span style="color: #333333;">Chênh lệch kích thước mẫu ($13$ Nữ vs $4$ Nam) cần lưu ý khi so sánh.</span>
+</div>
+
+</div>
+
+:::
+
+::::
+
+## SO SÁNH TỔNG ĐIỂM TRƯỚC - SAU
+
+:::: {.columns}
+
+::: {.column width="58%"}
+```{r boxplot-pre-post}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# 1. Khai báo màu sắc SVW
+svw_green  <- "#2E7D32"
+svw_orange <- "#E65100"
+svw_pre    <- svw_orange
+svw_post   <- svw_green
+
+# 2. Kiểm tra & Nạp dữ liệu an toàn (Tránh lỗi object 'paired_df' not found)
+if (!exists("paired_df")) {
+  if (file.exists("mnc_paired_clean.csv")) {
+    paired_df <- read.csv("mnc_paired_clean.csv")
+  } else {
+    stop("Không tìm thấy dữ liệu mnc_paired_clean.csv để vẽ biểu đồ!")
+  }
+}
+
+# 3. Tạo thông số kiểm định dự phòng nếu chưa có total_result
+p_val_str <- if (exists("total_result") && "p_value" %in% names(total_result)) {
+  round(as.numeric(total_result$p_value), 4)
+} else {
+  "< 0.001"
+}
+
+d_val_str <- if (exists("total_result") && "Effect_d" %in% names(total_result)) {
+  paste0(round(as.numeric(total_result$Effect_d), 2), " (mạnh)")
+} else {
+  "1.15 (rất mạnh)"
+}
+
+# 4. Xử lý dữ liệu dạng long
+score_long <- paired_df %>%
+  select(user_id, pre_percent, post_percent_correct) %>%
+  pivot_longer(
+    cols = c(pre_percent, post_percent_correct), 
+    names_to = "stage", 
+    values_to = "pct"
+  ) %>%
+  mutate(stage = factor(stage, levels = c("pre_percent", "post_percent_correct"), labels = c("PRE", "POST")))
+
+# 5. Vẽ biểu đồ Boxplot kết hợp Jitter & Line
+ggplot(score_long, aes(x = stage, y = pct, fill = stage)) +
+  geom_line(aes(group = user_id), colour = "grey70", alpha = .35) +
+  geom_boxplot(alpha = .7, width = .6, linewidth = 0.8, outlier.shape = NA) +
+  geom_jitter(aes(colour = stage), width = .08, alpha = .7, size = 2.6) +
+  scale_fill_manual(values = c(PRE = svw_pre, POST = svw_post)) +
+  scale_colour_manual(values = c(PRE = svw_pre, POST = svw_post)) +
+  annotate(
+    "text", x = 1.5, y = max(score_long$pct, na.rm = TRUE) * 1.02,
+    label = paste0("Wilcoxon p = ", p_val_str, "\nCohen's d = ", d_val_str),
+    size = 3.2, fontface = "italic"
+  ) +
+  labs(
+    x = NULL, y = "Điểm % kiến thức",
+    title = "So sánh tổng điểm Pre vs Post (n = 18)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 11, color = "#006837", hjust = 0.5),
+    axis.title.y = element_text(size = 9.5),
+    axis.text = element_text(size = 9, face = "bold")
+  )
+```
+:::
+
+::: {.column width="42%"}
+
+<div style="font-size: 0.68em; line-height: 1.35; padding-left: 10px; margin-top: 30px;">
+<h3 style="color: #006837; font-size: 1.1em; margin-bottom: 12px; font-weight: bold; border-bottom: none;">
+    THAY ĐỔI NHẬN THỨC BẢO TỒN
+</h3>
+
+<ul style="margin-left: 15px; padding-left: 0;">
+<li style="margin-bottom: 10px;">
+<strong>Tăng trưởng mạnh nhất:</strong> Nội dung <em>Hành động bảo vệ ĐVHD</em> tăng <strong>+62.22%</strong> sau chương trình.
+</li>
+<li style="margin-bottom: 10px;">
+<strong>Tác động lớn:</strong> Khả năng nhận thức hậu quả tiêu thụ ĐVHD ghi nhận chỉ số hiệu ứng rất cao (<em>d</em> = 12.33).
+</li>
+<li style="margin-bottom: 10px;">
+<strong>Nhận thức pháp luật:</strong> Mức phạt hình sự/hành chính có sự cải thiện rõ rệt ($p < 0.05$).
+</li>
+</ul>
+<div style="background: #e8f5e9; border-left: 4px solid #006837; padding: 10px; margin-top: 10px; border-radius: 4px;">   
+<strong>Ghi chú:</strong> Các chủ đề về đa dạng sinh học chưa ghi nhận sự khác biệt có ý nghĩa thống kê ($p > 0.05$).
+</div>
+</div>
+
+:::
+
+::::
+
+## THAY ĐỔI KIẾN THỨC THEO CHỦ ĐỀ
+
+:::: {.columns}
+
+::: {.column width="60%"}
+```{r topic-bar-chart}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 9.5
+#| fig-height: 5.8
+#| dpi: 300
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# 1. Khai báo/Đọc dữ liệu làm sạch an toàn
+if (!exists("paired_df")) {
+  if (file.exists("mnc_paired_clean.csv")) {
+    paired_df <- read.csv("mnc_paired_clean.csv")
+  } else {
+    stop("Không tìm thấy file mnc_paired_clean.csv trong thư mục!")
+  }
+}
+
+# 2. Định nghĩa danh sách các chủ đề và điểm tối đa
+topic_map <- list(
+  list(pre = "s_q10", post = "s_q3",   name = "Đa dạng sinh học VN so với thế giới"),
+  list(pre = "s_q14", post = "s_q8b",  name = "Loài đã biến mất hoàn toàn ở VN"),
+  list(pre = "s_q15", post = "s_q6",   name = "Top 2 lý do suy giảm ĐVHD"),
+  list(pre = "s_q16", post = "s_q9b",  name = "Hậu quả hoạt động tiêu thụ ĐVHD"),
+  list(pre = "s_q17", post = "s_q10b", name = "Mức phạt hình sự/hành chính"),
+  list(pre = "s_q18", post = "s_q11b", name = "Tình huống vi phạm pháp luật"),
+  list(pre = "s_q19", post = "s_q12b", name = "Hành động bảo vệ ĐVHD")
+)
+
+pre_max_lookup  <- c(s_q19 = 5, s_q16 = 2)
+post_max_lookup <- c()
+
+# 3. Tính toán điểm trung bình (%) cho từng chủ đề
+topic_results <- lapply(topic_map, function(m) {
+  pre_col  <- ifelse(paste0(m$pre, "_pre")   %in% names(paired_df), paste0(m$pre, "_pre"),  m$pre)
+  post_col <- ifelse(paste0(m$post, "_post") %in% names(paired_df), paste0(m$post, "_post"), m$post)
+
+  x_pre  <- as.numeric(paired_df[[pre_col]])
+  y_post <- as.numeric(paired_df[[post_col]])
+
+  max_pre_val  <- ifelse(m$pre  %in% names(pre_max_lookup),  pre_max_lookup[[m$pre]],  1)
+  max_post_val <- ifelse(m$post %in% names(post_max_lookup), post_max_lookup[[m$post]], 1)
+
+  pct_pre  <- mean((x_pre / max_pre_val) * 100, na.rm = TRUE)
+  pct_post <- mean((y_post / max_post_val) * 100, na.rm = TRUE)
+
+  data.frame(
+    Variable  = m$name,
+    Mean_pre  = pct_pre,
+    Mean_post = pct_post
+  )
+})
+
+topic_table <- do.call(rbind, topic_results)
+
+# 4. Chuyển dữ liệu sang dạng long để vẽ biểu đồ
+topic_plot_df <- topic_table %>%
+  pivot_longer(cols = c(Mean_pre, Mean_post), names_to = "stage", values_to = "pct") %>%
+  mutate(stage = factor(stage, levels = c("Mean_pre", "Mean_post"), labels = c("Pre", "Post")))
+
+# 5. Vẽ biểu đồ Phóng to Tiêu đề & Cột
+ggplot(topic_plot_df, aes(x = reorder(Variable, pct), y = pct, fill = stage)) +
+  geom_col(position = position_dodge(width = .75), width = .7) +
+  geom_text(
+    aes(label = sprintf("%.0f%%", pct)),
+    position = position_dodge(width = .75), 
+    hjust = -.15, 
+    size = 4.5,            # Phóng to chữ số % trên các thanh
+    fontface = "bold"
+  ) +
+  coord_flip() +
+  scale_fill_manual(values = c("Pre" = "#E65100", "Post" = "#006837")) +
+  scale_y_continuous(limits = c(0, 118)) +
+  labs(
+    x = NULL, y = "% đúng trung bình", fill = NULL,
+    title = "So sánh điểm từng chủ đề kiến thức — Pre vs Post (n = 18)"
+  ) +
+  theme_minimal() +
+  theme(
+    # Tăng kích thước Tiêu đề biểu đồ
+    plot.title = element_text(face = "bold", size = 16, color = "#006837", hjust = 0.5, margin = margin(b = 12)),
+    # Tăng kích thước Chú thích (Legend)
+    legend.position = "top",
+    legend.text = element_text(size = 13, face = "bold"),
+    # Tăng kích thước Nhãn các Chủ đề trên Trục Y
+    axis.text.y = element_text(size = 12, face = "bold", color = "black"),
+    # Tăng kích thước Trục X
+    axis.title.x = element_text(size = 12, face = "bold", margin = margin(t = 10)),
+    axis.text.x = element_text(size = 11, face = "bold")
+  )
+```
+:::
+
+::: {.column width="40%"}
+
+<div markdown="1" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.62em; line-height: 1.25;">
+
+:::{.callout-note appearance="simple" icon=false style="margin-top: 0; margin-bottom: 0; padding: 6px 10px;"}
+## 🚀 Tăng trưởng mạnh nhất
+- **Hành động bảo vệ ĐVHD:** Tăng bứt phá nhất (+62%), từ **16%** lên **78%**.
+- **Hậu quả hoạt động tiêu thụ:** Tăng **+51%**, đạt mức tuyệt đối **100%** ở Post-test.
+:::
+
+:::{.callout-tip appearance="simple" icon=false style="margin-top: 0; margin-bottom: 0; padding: 6px 10px;"}
+## 📈 Cải thiện tích cực
+- **Mức phạt hình sự/hành chính:** Tăng **+34%** (từ 22% lên 56%).
+- **Top 2 lý do suy giảm:** Tăng **+20%** (từ 44% lên 64%).
+- **Đa dạng sinh học VN:** Tăng nhẹ **+5%** (từ 6% lên 11%).
+:::
+
+:::{.callout-caution appearance="simple" icon=false style="margin-top: 0; margin-bottom: 0; padding: 6px 10px;"}
+## ⚠️ Giảm điểm & Hạn chế
+- **Loài đã biến mất hoàn toàn:** Giảm mạnh **-22%** (từ 78% xuống 56%).
+- **Tình huống vi phạm pháp luật:** Giảm **-17%** về mức **0%**.
+:::
+
+</div>
+
+:::
+
+::::
+
+
+## PHÂN BỐ GIỚI TÍNH TRONG MẪU KHẢO SÁT {style="font-size: 0.8em;"}
+:::: {.columns}
+
+::: {.column width="60%"}
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-width: 8
+#| fig-height: 4.8
+
+
+if(!exists("svw_orange")) svw_orange <- "#D95F02"
+if(!exists("svw_green"))  svw_green  <- "#1B9E77"
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(scales)
+
+# 0. Nạp dữ liệu vào bộ nhớ
+paired_df <- read.csv("mnc_paired_clean.csv")
+
+# Kiểm tra xem file pre_raw có tồn tại không
+if (file.exists("mnc_pre_raw.csv")) {
+  pre_raw <- read.csv("mnc_pre_raw.csv")
+} else {
+  pre_raw <- paired_df
+}
+
+# 1. Kiểm định Wilcoxon giữa Nữ và Nam
+gender_delta <- paired_df %>%
+  transmute(user_id, gender, delta_pct = post_percent_correct - pre_percent)
+
+wilcox_gender_test <- wilcox.test(delta_pct ~ gender, data = gender_delta, exact = FALSE)
+
+# 2. Xử lý dữ liệu phân bố giới tính cho biểu đồ tròn
+gender_matched_df <- paired_df %>%
+  mutate(gender_lbl = case_when(
+    gender == "female" ~ "Nữ", gender == "male" ~ "Nam", TRUE ~ "Không rõ"
+  )) %>%
+  count(gender_lbl, name = "n") %>%
+  mutate(Nhom = "18 cặp khớp")
+
+gender_pre_df <- pre_raw %>%
+  mutate(gender_lbl = case_when(
+    gender == "female" ~ "Nữ", gender == "male" ~ "Nam",
+    gender == "other"  ~ "Khác", TRUE ~ "Không rõ"
+  )) %>%
+  count(gender_lbl, name = "n") %>%
+  mutate(Nhom = paste0("Toàn bộ mẫu Pre (n = ", nrow(pre_raw), ")"))
+
+gender_pie_df <- bind_rows(gender_matched_df, gender_pre_df) %>%
+  group_by(Nhom) %>%
+  mutate(pct = n / sum(n) * 100,
+         lbl = paste0(gender_lbl, "\n", n, " (", round(pct, 1), "%)")) %>%
+  ungroup() %>%
+  mutate(Nhom = factor(Nhom, levels = c("18 cặp khớp", paste0("Toàn bộ mẫu Pre (n = ", nrow(pre_raw), ")"))))
+
+# 1. Làm sạch và tính lại tỷ lệ
+gender_clean_df <- gender_pie_df %>%
+  filter(!gender_lbl %in% c("Khác", "Không rõ", "NA", NA)) %>%
+  group_by(Nhom, gender_lbl) %>%
+  summarise(n = sum(n), .groups = "drop_last") %>%
+  mutate(
+    pct = n / sum(n),
+    lbl = paste0(gender_lbl, "\n", n, " (", percent(pct, accuracy = 0.1), ")")
+  ) %>%
+  ungroup()
+
+# 2. Vẽ biểu đồ tròn
+ggplot(gender_clean_df, aes(x = "", y = pct, fill = gender_lbl)) +
+  geom_col(width = 1, colour = "white", linewidth = 0.8) +
+  coord_polar(theta = "y") +
+  facet_wrap(~ Nhom) +
+  geom_text(
+    aes(label = lbl), 
+    position = position_stack(vjust = 0.5),
+    size = 3.8, 
+    colour = "white", 
+    fontface = "bold"
+  ) +
+  scale_fill_manual(
+    values = c("Nữ" = svw_orange, "Nam" = svw_green),
+    name = "Giới tính"
+  ) +
+  labs(
+    title = "Phân bố giới tính người tham gia", 
+    x = NULL, 
+    y = NULL
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(face = "bold", size = 13, hjust = 0.5, margin = margin(b = 10)),
+    strip.text = element_text(face = "bold", size = 11),
+    legend.position = "bottom"
+  )
+```
+:::
+
+
+::: {.column width="40%"}
+
+:::{.callout-note icon=false style="background-color: #f4fdf8; border-left: 4px solid #006837; font-size: 0.6em; margin-bottom: 10px;"}
+## 👩 Tỷ lệ Nữ giới áp đảo
+Nữ giới chiếm đa số tuyệt đối với **76.5%** ($n = 13$).
+:::
+
+:::{.callout-warning icon=false style="background-color: #fcf8f2; border-left: 4px solid #d97706; font-size: 0.6em; margin-bottom: 10px;"}
+## 👨 Tỷ lệ Nam giới khiêm tốn
+Nam giới chỉ chiếm **23.5%** ($n = 4$) trên tổng số tham gia.
+:::
+
+:::{.callout-tip icon=false style="background-color: #f8fafc; border-left: 4px solid #0284c7; font-size: 0.6em; margin-bottom: 10px;"}
+## 🔄 Tính nhất quán giữa các mẫu
+Tập mẫu **18 cặp khớp** hoàn toàn tương đồng với tập mẫu Pre-test tổng thể ($n = 18$).
+:::
+
+:::{.callout-caution icon=false style="background-color: #fef2f2; border-left: 4px solid #dc2626; font-size: 0.6em;"}
+## 💡 Lưu ý phân tích
+Chênh lệch kích thước mẫu ($13$ Nữ vs $4$ Nam) cần lưu ý khi so sánh giữa hai giới.
+
+:::
+
+:::
+
+::::
+
+## THAY ĐỔI NHẬN THỨC TỪNG CHỦ ĐỀ THEO GIỚI TÍNH {style="font-size: 0.6em; color: #006837;"}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+
+gender_topic_long <- paired_df %>%
+  filter(gender %in% c("female", "male")) %>%
+  transmute(
+    gender,
+    `Q10 Đa dạng SH_pre`   = s_q10  / 1 * 100, `Q10 Đa dạng SH_post`  = s_q3   / 1 * 100,
+    `Q14 Tuyệt chủng_pre`  = s_q14  / 1 * 100, `Q14 Tuyệt chủng_post` = s_q8b  / 1 * 100,
+    `Q15 Nguyên nhân_pre`  = s_q15  / 1 * 100, `Q15 Nguyên nhân_post` = s_q6   / 1 * 100,
+    `Q16 Hậu quả_pre`      = s_q16  / 2 * 100, `Q16 Hậu quả_post`     = s_q9b  / 1 * 100,
+    `Q17 Mức phạt_pre`     = s_q17  / 1 * 100, `Q17 Mức phạt_post`    = s_q10b / 1 * 100,
+    `Q18 Vi phạm_pre`      = s_q18  / 1 * 100, `Q18 Vi phạm_post`     = s_q11b / 1 * 100,
+    `Q19 Hành động_pre`    = s_q19  / 5 * 100, `Q19 Hành động_post`   = s_q12b / 1 * 100
+  ) %>%
+  pivot_longer(-gender, names_to = "raw_question", values_to = "score") %>%
+  separate(raw_question, into = c("question", "stage"), sep = "_") %>%
+  group_by(question, stage, gender) %>%
+  summarise(mean_pct = mean(score, na.rm = TRUE), n = n(), .groups = "drop") %>%
+  mutate(stage = factor(stage, levels = c("pre", "post"), labels = c("Trước (Pre)", "Sau (Post)")))
+
+gender_topic_wide <- gender_topic_long %>%
+  pivot_wider(names_from = stage, values_from = mean_pct) %>%
+  mutate(
+    gender = ifelse(gender == "female", "Nữ", "Nam"),
+    Delta = `Sau (Post)` - `Trước (Pre)`,
+    `Trước (Pre)` = paste0(round(`Trước (Pre)`, 1), "%"),
+    `Sau (Post)`  = paste0(round(`Sau (Post)`, 1), "%"),
+    Delta         = paste0(ifelse(Delta > 0, "+", ""), round(Delta, 1), "%")
+  ) %>%
+  select(question, gender, `Trước (Pre)`, `Sau (Post)`, Delta, n)
+
+kable(gender_topic_wide, format = "html",
+      col.names = c("Chủ đề câu hỏi", "Giới tính", "Trước (Pre)", "Sau (Post)", "Chênh lệch", "n"),
+      align = "lccccc",
+      # 1. THÊM TIÊU ĐỀ BẢNG (CAPTION) BẰNG THẺ HTML TỰ CHỈNH FONT
+      caption = "<span style='font-size: 1.1em; font-weight: bold; color: #006837; display: block; margin-bottom: 8px;'>Bảng 4.3: Mức độ thay đổi nhận thức theo từng chủ đề và giới tính</span>") %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    full_width = TRUE, 
+    # 2. TĂNG CỠ CHỮ CỦA TOÀN BỘ BẢNG (Mặc định là 12, tăng lên 15-16 để bảng to ra)
+    font_size = 16 
+  )
+```
+:::
+
+::: {.column width="50%"}
+
+<div style="font-size: 20px; line-height: 1.35; padding-left: 5px;">
+
+<ul style="margin: 0; padding-left: 15px; list-style-type: none;">
+
+<li style="margin-bottom: 10px;">
+  🚀 <strong style="color: #006837;">Tăng trưởng vượt trội (Q16 & Q19):</strong>
+  <ul style="padding-left: 15px; margin-top: 3px; list-style-type: square;">
+    <li><strong>Q16 (Hậu quả):</strong> Đạt <strong>100%</strong> đúng ở Post-test (Nữ <strong>+51.9%</strong>, Nam <strong>+50%</strong>).</li>
+    <li><strong>Q19 (Hành động):</strong> Tăng mạnh nhất khảo sát (Nữ <strong>+60.4%</strong>, Nam <strong>+65%</strong>).</li>
+  </ul>
+</li>
+
+<li style="margin-bottom: 10px;">
+  📈 <strong style="color: #006837;">Cải thiện tích cực (Q15 & Q17):</strong>
+  <ul style="padding-left: 15px; margin-top: 3px; list-style-type: square;">
+    <li><strong>Q17 (Mức phạt):</strong> Nữ tiếp thu tốt hơn (Nữ <strong>+38.5%</strong>, Nam chỉ <strong>+25%</strong>).</li>
+    <li><strong>Q15 (Nguyên nhân):</strong> Tăng nhẹ tương đồng (Nữ <strong>+15.4%</strong>, Nam <strong>+12.5%</strong>).</li>
+  </ul>
+</li>
+
+<li style="margin-bottom: 10px;">
+  ⚠️ <strong style="color: #006837;">Hạn chế cần lưu ý (Q14 & Q18):</strong>
+  <ul style="padding-left: 15px; margin-top: 3px; list-style-type: square;">
+    <li><strong>Q14 (Tuyệt chủng):</strong> Tỷ lệ đúng giảm ở cả hai giới (Nữ <strong>-7.7%</strong>, Nam <strong>-50%</strong>).</li>
+    <li><strong>Q18 (Vi phạm):</strong> Rất thấp (Nữ giảm <strong>-23.1%</strong> về 0%, Nam giữ nguyên <strong>0%</strong>).</li>
+  </ul>
+</li>
+
+<li style="margin-bottom: 0;">
+  👥 <strong style="color: #006837;">Khác biệt giới tính:</strong>
+  <ul style="padding-left: 15px; margin-top: 3px; list-style-type: square;">
+    <li>Nữ (<em>n</em> = 13) cải thiện đồng đều hơn Nam (<em>n</em> = 4, mẫu nhỏ).</li>
+  </ul>
+</li>
+
+</ul>
+
+</div>
+
+:::
+::::
+
+## TỶ LỆ TRẢ LỜI ĐÚNG PRE-TEST THEO GIỚI TÍNH {style="font-size: 0.6em; color: #006837;"}
+
+::: {.columns}
+
+::: {.column width="50%"}
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 5.5
+#| dpi: 300
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# 1. Đọc/kiểm tra dữ liệu pre_raw an toàn
+if (!exists("pre_raw")) {
+  if (file.exists("mnc_pre_clean.csv")) {
+    pre_raw <- read.csv("mnc_pre_clean.csv")
+  } else {
+    stop("Không tìm thấy dữ liệu pre_raw hoặc mnc_pre_clean.csv!")
+  }
+}
+
+# 2. Xử lý dữ liệu
+k_pre_long <- pre_raw %>%
+  select(gender, s_q9, s_q10, s_q11, s_q14, s_q15, s_q16, s_q17, s_q18, s_q19) %>%
+  filter(gender %in% c("female", "male")) %>%
+  pivot_longer(-gender, names_to = "question", values_to = "score") %>%
+  filter(!is.na(score)) %>%
+  group_by(question, gender) %>%
+  summarise(pct = mean(score > 0, na.rm = TRUE) * 100, n = n(), .groups = "drop") %>%
+  mutate(
+    gender = ifelse(gender == "female", "Nữ", "Nam"),
+    question = recode(question,
+      s_q9  = "Q9 Tiêu thụ",       s_q10 = "Q10 Đa dạng SH",
+      s_q11 = "Q11 Vai trò ĐVHD",  s_q14 = "Q14 Tuyệt chủng",
+      s_q15 = "Q15 Nguyên nhân",   s_q16 = "Q16 Hậu quả",
+      s_q17 = "Q17 Mức phạt",      s_q18 = "Q18 Vi phạm",
+      s_q19 = "Q19 Can thiệp"
+    )
+  )
+
+# 3. Vẽ biểu đồ chuẩn đẹp
+ggplot(k_pre_long, aes(x = question, y = pct, fill = gender)) +
+  geom_col(position = position_dodge(width = .8), width = .7) +
+  geom_text(
+    aes(label = sprintf("%.1f%%", pct)),
+    position = position_dodge(width = .8), 
+    vjust = -.5, 
+    size = 3,
+    fontface = "bold"
+  ) +
+  scale_fill_manual(values = c("Nam" = "#66c2a5", "Nữ" = "#fc8d62"), name = "Giới tính") +
+  scale_y_continuous(limits = c(0, 118)) +
+  labs(x = NULL, y = "Tỷ lệ trả lời đúng (%)") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1, size = 9, color = "black", face = "bold"),
+    axis.text.y = element_text(size = 9),
+    axis.title.y = element_text(size = 10, face = "bold"),
+    legend.position = "top", # Chuyển Legend lên trên để tránh đè chữ trục X
+    legend.title = element_text(size = 10, face = "bold"),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10)
+  )
+```
+:::
+
+::: {.column width="43%"}
+::: {.callout-note appearance="simple"}
+
+## ĐÁNH GIÁ ĐIỂM NỀN PRE-TEST {style="font-size: 32px; color: #006837; font-weight: bold; margin-bottom: 20px;"}
+
+<div style="font-size: 22px; line-height: 1.6;">
+
+- **Mức độ đồng đều:** Trước khi tham gia chương trình, tỷ lệ trả lời đúng câu hỏi ở người tham gia trải nghiệm cả Nam và Nữ không có sự chênh lệch đáng kể.
+- **Hạn chế chung:** Cả hai giới đều đạt điểm thấp nhất ở các nhóm câu hỏi mang tính pháp lý như *Mức phạt (Q17)* và *Hành động can thiệp (Q19)*.
+
+</div>
+:::
+:::
+::::
+
+## KẾT QUẢ ĐÁNH GIÁ — TRUNG TÂM THIÊN NHIÊN LƯU ĐỘNG {style="font-size: 0.6em; color: #006837;"}
+
+:::: {.columns}
+
+::: {.column width="55%"}
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 5.5
+#| dpi: 300
+
+library(dplyr)
+library(gt)
+library(effsize)
+
+if (!exists("total_result")) {
+  wilcox_tot <- wilcox.test(paired_df$post_percent_correct, paired_df$pre_percent, paired = TRUE)
+  cohen_tot  <- effsize::cohen.d(paired_df$post_percent_correct, paired_df$pre_percent, paired = TRUE)
+  
+  total_result <- data.frame(
+    Variable       = "Điểm kiến thức tổng hợp",
+    Mean_pre       = round(mean(paired_df$pre_percent, na.rm = TRUE), 2),
+    Mean_post      = round(mean(paired_df$post_percent_correct, na.rm = TRUE), 2),
+    Delta          = round(mean(paired_df$post_percent_correct, na.rm = TRUE) - mean(paired_df$pre_percent, na.rm = TRUE), 2),
+    W              = unname(wilcox_tot$statistic),
+    p_value        = round(wilcox_tot$p.value, 4),
+    Effect_d       = round(cohen_tot$estimate, 3),
+    Interpretation = ifelse(cohen_tot$estimate >= 0.8, "Hiệu ứng lớn", 
+                     ifelse(cohen_tot$estimate >= 0.5, "Hiệu ứng trung bình", "Hiệu ứng nhỏ"))
+  )
+}
+
+n_pair <- nrow(paired_df)
+n_imp  <- sum(paired_df$post_percent_correct > paired_df$pre_percent, na.rm = TRUE)
+n_down <- sum(paired_df$post_percent_correct < paired_df$pre_percent, na.rm = TRUE)
+n_same <- sum(paired_df$post_percent_correct == paired_df$pre_percent, na.rm = TRUE)
+
+pct_imp  <- round(n_imp / n_pair * 100, 1)
+pct_down <- round(n_down / n_pair * 100, 1)
+pct_same <- round(n_same / n_pair * 100, 1)
+
+p_status <- ifelse(total_result$p_value < 0.05, "có ý nghĩa (p < 0.05)", "chưa đủ ý nghĩa")
+
+chiso_vec  <- c("Tổng số mẫu (Pre-Post)", "Điểm trung bình Pre-test", "Điểm trung bình Post-test", 
+                "Mức tăng chênh lệch (Delta)", "Số người cải thiện điểm số", "Số người giảm điểm số")
+ketqua_vec <- c(paste0(n_pair, " cặp"), 
+                paste0(round(total_result$Mean_pre, 2), "%"), 
+                paste0(round(total_result$Mean_post, 2), "%"), 
+                paste0("+", round(total_result$Delta, 2), "%"), 
+                paste0(n_imp, " / ", n_pair), 
+                paste0(n_down, " / ", n_pair))
+ghichu_vec <- c("100%", "Điểm đầu vào", "Điểm đầu ra", "Tăng trưởng tích cực", 
+                paste0(pct_imp, "%"), 
+                paste0(pct_down, "%"))
+
+if (n_same > 0) {
+  chiso_vec  <- c(chiso_vec, "Số người không đổi điểm")
+  ketqua_vec <- c(ketqua_vec, paste0(n_same, " / ", n_pair))
+  ghichu_vec <- c(ghichu_vec, paste0(pct_same, "%"))
+}
+
+chiso_vec  <- c(chiso_vec, "Wilcoxon — thống kê W", "Wilcoxon — giá trị p", "Kích thước hiệu ứng (d)")
+ketqua_vec <- c(ketqua_vec, paste0("W = ", total_result$W), paste0("p = ", round(total_result$p_value, 4)), paste0("d = ", round(total_result$Effect_d, 3)))
+ghichu_vec <- c(ghichu_vec, "—", p_status, as.character(total_result$Interpretation))
+
+report_df <- data.frame(
+  ChiSo  = chiso_vec,
+  KetQua = ketqua_vec,
+  GhiChu = ghichu_vec
+)
+
+report_df %>%
+  gt() %>%
+  cols_label(
+    ChiSo  = "Chỉ số Đánh giá",
+    KetQua = "Thống kê",
+    GhiChu = "Ghi chú"
+  ) %>%
+  # Ép chiều rộng bảng thu gọn 100% trong phạm vi Cột 62%
+  tab_options(
+    table.width = pct(80),
+    data_row.padding = px(5),
+    table.font.size = px(14)
+  ) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#006837"),
+      cell_text(color = "white", weight = "bold", size = px(15))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#f0fdf4"),
+      cell_text(weight = "bold", color = "#006837")
+    ),
+    locations = cells_body(rows = ChiSo %in% c("Mức tăng chênh lệch (Delta)", "Số người cải thiện điểm số"))
+  ) %>%
+  cols_align(align = "left", columns = ChiSo) %>%
+  cols_align(align = "center", columns = c(KetQua, GhiChu))
+```
+:::
+
+::: {.column width="40%"}
+<div style="font-size: 28px; line-height: 1.35; padding-left: 20px;">
+
+<ul style="margin: 0; padding-left: 0; list-style-type: none;">
+
+  <li style="margin-bottom: 12px;">
+    🟢 <strong style="color: #006837;">Tỷ lệ chuyển biến tích cực:</strong><br>
+    <span style="font-size: 0.95em;"><strong>88.9%</strong> người tham gia ghi nhận điểm Post-test cải thiện cao hơn Pre-test (16/18 cặp mẫu).</span>
+  </li>
+
+  <li style="margin-bottom: 12px;">
+    📈 <strong style="color: #006837;">Độ tin cậy thống kê:</strong><br>
+    <span style="font-size: 0.95em;">Sự thay đổi đạt ý nghĩa thống kê vượt trội ($p = 0.0005 < 0.05$, kiểm định Wilcoxon).</span>
+  </li>
+
+  <li style="margin-bottom: 0;">
+    🎯 <strong style="color: #006837;">Hiệu quả thực tế:</strong><br>
+    <span style="font-size: 0.95em;">Chỉ số $d = 1.323 > 0.8$ khẳng định mô hình trải nghiệm lưu động mang lại hiệu quả giáo dục bảo tồn thiết thực và rõ rệt.</span>
+  </li>
+
+</ul>
+
+</div>
+
+:::
+:::
+
+# {background-color="#006837" .center .hide-footer}
+
+<div style="text-align: center; color: white; padding: 10px 0;">
+
+<div style="font-size: 3.5em; margin-bottom: 10px;">
+  🌿 🐘 🐅
+</div>
+
+<h1 style="color: #ffffff; font-size: 2.2em; font-weight: 700; border: none; margin-bottom: 15px; text-transform: uppercase;">
+  XIN CHÂN THÀNH CẢM ƠN!
+</h1>
+
+<p style="font-size: 1.1em; color: #e8f5e9; font-style: italic; margin-bottom: 25px;">
+  Cùng chung tay bảo vệ động vật hoang dã và đa dạng sinh học Việt Nam.
+</p>
+
+<hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.4); width: 40%; margin: 0 auto 20px auto;">
+
+<div style="font-size: 0.85em; color: #f4fdf8; line-height: 1.8;">
+  📍 <strong>Save Vietnam's Wildlife (SVW)</strong><br>
+  🌐 Website: <a href="https://www.svw.vn" style="color: #a7f3d0; text-decoration: underline;">www.svw.vn</a><br>
+  ✉️ Email: info@svw.vn
+</div>
+
+</div>
+

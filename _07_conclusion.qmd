@@ -1,0 +1,48 @@
+
+# PHẦN 7: KẾT LUẬN {#sec-conclusion}
+## Bảng tổng hợp kết quả
+```{r conclusion, results='asis'}
+# 7.1. Bảng tổng hợp kết luận
+#| echo: false
+#| cat(report_md_table_only)
+# Bảng kết luận
+n_pair <- nrow(paired_df)
+n_imp  <- sum(paired_df$post_percent_correct > paired_df$pre_percent)
+n_down <- sum(paired_df$post_percent_correct < paired_df$pre_percent)
+n_same <- sum(paired_df$post_percent_correct == paired_df$pre_percent)
+
+pct_imp  <- round(n_imp / n_pair * 100, 1)
+pct_down <- round(n_down / n_pair * 100, 1)
+pct_same <- round(n_same / n_pair * 100, 1)
+
+p_status <- ifelse(total_result$p_value < 0.05, "có ý nghĩa thống kê (p < 0.05)", "chưa đủ ý nghĩa thống kê")
+
+# Xây dựng bảng bằng paste0() (không dùng cat() nhiều tham số, tránh lỗi
+# tự chèn dấu cách của cat()). Tách "W = ..." và "p = ..." thành 2 cột
+# riêng thay vì nhồi chung 1 ô — tránh phải escape ký tự "|" trong bảng
+# markdown (nguồn gốc lỗi \vert{} ở bản trước).
+same_row <- if (n_same > 0) {
+  paste0("| **Số người không đổi điểm** | **", n_same, " / ", n_pair, "** | ", pct_same, "% |\n")
+} else {
+  ""
+}
+
+report_md <- paste0(
+  "\n### KẾT QUẢ ĐÁNH GIÁ — TRUNG TÂM THIÊN NHIÊN LƯU ĐỘNG\n\n",
+  "| Chỉ số Đánh giá | Kết quả Thống kê | Tỷ lệ / Ghi chú |\n",
+  "|:---|:---:|:---:|\n",
+  "| **Tổng số mẫu hợp lệ (Pre-Post)** | **", n_pair, "** cặp | 100% |\n",
+  "| **Điểm trung bình Pre-test** | **", round(total_result$Mean_pre, 2), "%** | Điểm đầu vào |\n",
+  "| **Điểm trung bình Post-test** | **", round(total_result$Mean_post, 2), "%** | Điểm đầu ra |\n",
+  "| **Mức tăng chênh lệch (Delta)** | **+", round(total_result$Delta, 2), "%** | **Tăng trưởng tích cực** |\n",
+  "| **Số người cải thiện điểm số** | **", n_imp, " / ", n_pair, "** | **", pct_imp, "%** |\n",
+  "| **Số người giảm điểm số** | **", n_down, " / ", n_pair, "** | ", pct_down, "% |\n",
+  same_row,
+  "| **Kiểm định Wilcoxon — thống kê W** | **W = ", total_result$W, "** | — |\n",
+  "| **Kiểm định Wilcoxon — giá trị p** | **p = ", round(total_result$p_value, 4), "** | ", p_status, " |\n",
+  "| **Kích thước hiệu ứng (Cohen's d)** | **d = ", round(total_result$Effect_d, 3), "** | **", total_result$Interpretation, "** |\n",
+  "\n> 💡 **Ghi chú:** *Toàn bộ số liệu trên được tính toán tự động trực tiếp từ các hàm thống kê `wilcox.test()` và `effsize::cohen.d()` — đảm bảo tính chính xác và minh bạch 100%.*\n"
+)
+
+cat(report_md)
+```

@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Roboto:wght@400;500&display=swap');
+
+/* Đổi màu chủ đạo Revealjs sang xanh SVW */
+:root {
+  --r-main-font: 'Roboto', sans-serif;
+  --r-heading-font: 'Poppins', sans-serif;
+  --r-heading-color: #006837;
+  --r-link-color: #16a34a;
+}
+
+/* Định dạng căn lề slide chuẩn (căn trái) */
+.reveal .slides section {
+  text-align: left;
+}
+
+/* Định dạng tiêu đề h2 và lùi sang phải để tạo khoảng cách với Logo */
+.reveal h2 {
+  color: #006837;
+  border-bottom: 2px solid #006837;
+  padding-bottom: 10px;
+  font-weight: 700;
+  margin-left: 120px !important; 
+  width: calc(100% - 120px) !important; 
+}
+
+/* 1. Ép logo hiển thị ở góc trên bên trái ở TẤT CẢ các slide */
+.reveal .slide-logo {
+  display: block !important;
+  position: fixed !important;
+  top: 15px !important;
+  left: 20px !important;
+  right: auto !important;
+  max-height: 70px !important;
+  max-width: 180px !important;
+  z-index: 9999 !important; 
+}
+
+/* 2. Bắt buộc hiển thị logo riêng cho Title Slide */
+.reveal .slides section.title-slide .slide-logo,
+.reveal .title-slide .slide-logo {
+  display: block !important;
+}
+
+/* =========================================================
+   3. BỔ SUNG: ĐƯỜNG KẺ CHÂN TRANG (FOOTER) CHO TẤT CẢ SLIDE
+   ========================================================= */
+/* =========================================================
+   ĐƯỜNG KẺ CHÂN TRANG ĐẬM 80% SLIDE (CĂN GIỮA)
+   ========================================================= */
+
+/* 1. Xóa đường kẻ mặc định ở slide-number để không bị lặp 2 đường kẻ */
+.reveal .slide-number {
+  border-top: none !important;
+}
+
+/* 2. Tạo 1 đường kẻ duy nhất đậm 2.5px, dài 80% ở chân trang */
+.reveal .footer {
+  border-top: 2.5px solid #006837 !important; /* Độ dày đường kẻ (2.5px) */
+  width: 80% !important;                       /* Độ dài đường kẻ (80%) */
+  left: 10% !important;                        /* Căn giữa: (100% - 80%) / 2 = 10% */
+  padding-top: 8px !important;                 /* Khoảng cách từ đường kẻ đến chữ */
+  bottom: 12px !important;                     /* Khoảng cách cách đáy slide */
+  text-align: left !important;                 /* Chữ footer căn trái theo đường kẻ */
+  font-size: 0.55em !important;
+  color: #555555 !important;
+}
+
+/* Tạo đường kẻ riêng cho khu vực số trang (slide number) nếu hiển thị riêng */
+.reveal .slide-number {
+  border-top: 1.5px solid #006837 !important;
+  padding-top: 8px !important;
+  bottom: 12px !important;
+  right: 20px !important;
+}
+/* CHÈN ẢNH 02_runglang.jpg VÀO BÊN TRÁI CHÂN TRANG */
+.reveal .footer::before {
+  content: "";
+  display: block;
+  width: 60px; /* Điều chỉnh chiều rộng logo tùy ý */
+  height: 30px; /* Điều chỉnh chiều cao logo tùy ý */
+  background-image: url('02_runglang.jpg'); /* Đường dẫn tới file ảnh */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  
+  /* Định vị ảnh nằm đè sát lề trái phía trên đường kẻ */
+  position: absolute;
+  left: 0;
+  bottom: 100%; /* Đặt logo ngay trên đường kẻ border-top */
+  margin-bottom: 4px; /* Khoảng cách giữa logo và đường kẻ */
+}
+/* Ẩn footer, đường kẻ và logo chân trang ở slide có class .hide-footer hoặc nền xanh */
+.reveal section.hide-footer .footer,
+.reveal section.hide-footer .footer::before,
+.reveal section[data-background-color="#006837"] .footer,
+.reveal section[data-background-color="#006837"] .footer::before {
+  display: none !important;
+  opacity: 0 !important;
+}

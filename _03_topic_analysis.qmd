@@ -1,0 +1,94 @@
+# PHẦN 3: KIẾN THỨC THEO TỪNG CHỦ ĐỀ {#sec-topics}
+```{r topic-mapping}
+#| include: false
+topic_map <- list(
+  list(pre = "s_q10", post = "s_q3",   name = "Đa dạng sinh học VN so với thế giới"),
+  list(pre = "s_q14", post = "s_q8b",  name = "Loài đã biến mất hoàn toàn ở VN"),
+  list(pre = "s_q15", post = "s_q6",   name = "Top 2 lý do suy giảm ĐVHD"),
+  list(pre = "s_q16", post = "s_q9b",  name = "Hậu quả hoạt động tiêu thụ ĐVHD"),
+  list(pre = "s_q17", post = "s_q10b", name = "Mức phạt hình sự/hành chính"),
+  list(pre = "s_q18", post = "s_q11b", name = "Tình huống vi phạm pháp luật"),
+  list(pre = "s_q19", post = "s_q12b", name = "Hành động bảo vệ ĐVHD")
+)
+
+pre_max_lookup  <- c(s_q19 = 5, s_q16 = 2)
+post_max_lookup <- c()
+
+topic_results <- lapply(topic_map, function(m) {
+  pre_col  <- ifelse(paste0(m$pre, "_pre") %in% names(paired_df), paste0(m$pre, "_pre"), m$pre)
+  post_col <- ifelse(paste0(m$post, "_post") %in% names(paired_df), paste0(m$post, "_post"), m$post)
+
+  x_pre  <- as.numeric(paired_df[[pre_col]])
+  y_post <- as.numeric(paired_df[[post_col]])
+
+  # Viết liền %in% không có khoảng trắng ở giữa 2 dấu %
+  max_pre_val  <- if (m$pre %in% names(pre_max_lookup)) pre_max_lookup[[m$pre]] else 1
+  max_post_val <- if (m$post %in% names(post_max_lookup)) post_max_lookup[[m$post]] else 1
+
+  paired_test(x_pre / max_pre_val * 100, y_post / max_post_val * 100, m$name)
+})
+
+topic_table <- do.call(rbind, topic_results)
+```
+
+# 3.1. Bảng Chi Tiết Chỉ Số Theo Chủ Đề
+
+:::: {.columns}
+
+::: {.column width="62%"}
+```{r}
+
+#| echo: false
+kable(topic_table, digits = 2,
+      caption = "So sánh chi tiết từng chủ đề (n = 18 cặp khớp)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+                full_width = TRUE, 
+                font_size = 11)
+```
+
+::: {.column width="38%"}
+
+:::
+
+::::
+3.1. Bảng Chi Tiết Chỉ Số Theo Chủ Đề
+:::: {.columns}
+
+::: {.column width="62%"}
+```{r}
+#| echo: false
+kable(topic_table, digits = 2,
+      caption = "So sánh chi tiết từng chủ đề (n = 18 cặp khớp)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+                full_width = TRUE, 
+                font_size = 11)
+```
+:: {.column width="38%"}
+
+:::
+
+::::
+# 3.2. Biểu đồ so sánh tỷ lệ trả lời đúng
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 5.2
+#| fig-align: center
+#| fig-cap: "Tỷ lệ trả lời đúng theo chủ đề, Pre vs Post (n = 18)"
+
+topic_plot_df <- topic_table %>%
+  select(Variable, Mean_pre, Mean_post) %>%
+  pivot_longer(c(Mean_pre, Mean_post), names_to = "stage", values_to = "pct") %>%
+  mutate(stage = factor(stage, levels = c("Mean_pre", "Mean_post"), labels = c("Pre", "Post")))
+
+ggplot(topic_plot_df, aes(x = reorder(Variable, pct), y = pct, fill = stage)) +
+  geom_col(position = position_dodge(width = .75), width = .65) +
+  geom_text(aes(label = sprintf("%.0f%%", pct)),
+            position = position_dodge(width = .75), hjust = -.15, size = 3.2) +
+  coord_flip() +
+  scale_fill_manual(values = c(Pre = svw_pre, Post = svw_post)) +
+  scale_y_continuous(limits = c(0, 105)) +
+  labs(x = NULL, y = "% đúng", fill = NULL,
+       title = "Kiến thức theo chủ đề — Pre vs Post (n = 18)") +
+  theme_svw
+```

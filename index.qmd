@@ -1,0 +1,74 @@
+---
+title: "Trung Tâm Thiên Nhiên Lưu Động"
+subtitle: "Đánh Giá Pre-Post 2026 | KAP Evaluation"
+author: "Nhóm Nghiên cứu - CE"
+date: "2026-08-04"
+format:
+  revealjs:
+    theme: simple
+    transition: slide
+    slide-number: true
+    show-slide-number: all
+    controls: true
+    toc: true
+    toc-depth: 1
+    toc-title: "MỤC LỤC BÁO CÁO"
+    width: 1280
+    height: 720
+    embed-resources: true
+    slide-level: 2
+    include-in-header:
+      text: |
+        <style>
+          /* 1. Ép tiêu đề dùng font tiếng Việt chuẩn */
+          .reveal h1, .reveal h2, .reveal h3 {
+            font-family: "Segoe UI", Roboto, Arial, sans-serif !important;
+            text-transform: none !important; /* Giữ nguyên hoa/thường để không bị lỗi dấu */
+          }
+          .reveal h1 { font-size: 2.0em !important; }
+          .reveal h2 { font-size: 1.4em !important; color: #1a5276; }
+          .reveal table { font-size: 0.65em !important; }
+        </style>
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+```{r setup-libraries}
+#| include: false
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(effsize)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(broom)
+library(gt)
+
+svw_green  <- "#2E7D32"
+svw_orange <- "#E65100"
+svw_pre    <- svw_orange
+svw_post   <- svw_green
+
+theme_svw <- theme_classic() + 
+  theme(
+    plot.title    = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 10, colour = "grey30"),
+    axis.title    = element_text(face = "bold")
+  )
+```
+{{< include _00_file_path.qmd >}}
+{{< include _01_clean_data.qmd >}}
+{{< include _02_total_scores.qmd >}}
+{{< include _03_topic_analysis.qmd >}}
+{{< include _04_gender_analysis.qmd >}}
+{{< include _05_regression_kap.qmd >}}
+{{< include _06_summary_all.qmd >}}
+{{< include _07_conclusion.qmd >}}
+{{< include _08_export_data.qmd >}}

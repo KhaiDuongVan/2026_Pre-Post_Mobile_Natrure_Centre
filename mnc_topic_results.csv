@@ -1,0 +1,8 @@
+"Variable","n","Mean_pre","Mean_post","Delta","W","p_value","Effect_d","Interpretation"
+"Đa dạng sinh học VN so với thế giới",18,5.56,11.11,5.56,1,1,0.187,"Không có ý nghĩa thống kê"
+"Loài đã biến mất hoàn toàn ở VN",18,77.78,55.56,-22.22,9,0.1817,-0.471,"Không có ý nghĩa thống kê"
+"Top 2 lý do suy giảm ĐVHD",18,44.44,63.89,19.44,104,0.1767,0.505,"Không có ý nghĩa thống kê"
+"Hậu quả hoạt động tiêu thụ ĐVHD",18,48.61,100,51.39,171,0,12.333,"Có ý nghĩa, hiệu ứng lớn"
+"Mức phạt hình sự/hành chính",18,22.22,55.56,33.33,31.5,0.0411,0.706,"Có ý nghĩa, hiệu ứng trung bình"
+"Tình huống vi phạm pháp luật",18,16.67,0,-16.67,0,0.1489,-0.615,"Không có ý nghĩa thống kê"
+"Hành động bảo vệ ĐVHD",18,15.56,77.78,62.22,171,2e-04,3.291,"Có ý nghĩa, hiệu ứng lớn"

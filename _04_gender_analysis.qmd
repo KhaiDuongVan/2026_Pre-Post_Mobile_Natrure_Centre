@@ -1,0 +1,206 @@
+# PHẦN 4: PHÂN TÍCH THEO GIỚI TÍNH {#sec-gender}
+
+```{r gender-setup}
+#| include: false
+
+# 1. Kiểm định Wilcoxon giữa Nữ và Nam về mức tăng điểm tổng
+gender_delta <- paired_df %>%
+  transmute(user_id, gender, delta_pct = post_percent_correct - pre_percent)
+
+wilcox_gender_test <- wilcox.test(delta_pct ~ gender, data = gender_delta, exact = FALSE)
+
+# 2. Xử lý dữ liệu phân bố giới tính cho biểu đồ tròn
+gender_matched_df <- paired_df %>%
+  mutate(gender_lbl = case_when(
+    gender == "female" ~ "Nữ", gender == "male" ~ "Nam", TRUE ~ "Không rõ"
+  )) %>%
+  count(gender_lbl, name = "n") %>%
+  mutate(Nhom = "18 cặp khớp")
+
+gender_pre_df <- pre_raw %>%
+  mutate(gender_lbl = case_when(
+    gender == "female" ~ "Nữ", gender == "male" ~ "Nam",
+    gender == "other"  ~ "Khác", TRUE ~ "Không rõ"
+  )) %>%
+  count(gender_lbl, name = "n") %>%
+  mutate(Nhom = paste0("Toàn bộ mẫu Pre (n = ", nrow(pre_raw), ")"))
+
+gender_pie_df <- bind_rows(gender_matched_df, gender_pre_df) %>%
+  group_by(Nhom) %>%
+  mutate(pct = n / sum(n) * 100,
+         lbl = paste0(gender_lbl, "\n", n, " (", round(pct, 1), "%)")) %>%
+  ungroup() %>%
+  mutate(Nhom = factor(Nhom, levels = c("18 cặp khớp", paste0("Toàn bộ mẫu Pre (n = ", nrow(pre_raw), ")"))))
+```
+# 4.1. Phân bố giới tính trong mẫu khảo sát
+
+```{r gender-pie-chart}
+#| echo: false
+#| fig-cap: "Phân bố giới tính: 18 cặp khớp đã ghép Pre-Post vs. toàn bộ mẫu Pre"
+#| fig-width: 8
+#| fig-height: 4.5
+
+if(!exists("svw_orange")) svw_orange <- "#D95F02"
+if(!exists("svw_green"))  svw_green  <- "#1B9E77"
+
+# 1. Làm sạch và tính lại tỷ lệ
+gender_clean_df <- gender_pie_df %>%
+  filter(!gender_lbl %in% c("Khác", "Không rõ", "NA", NA)) %>%
+  group_by(Nhom, gender_lbl) %>%
+  summarise(n = sum(n), .groups = "drop_last") %>%
+  mutate(
+    pct = n / sum(n),
+    lbl = paste0(gender_lbl, "\n", n, " (", percent(pct, accuracy = 0.1), ")")
+  ) %>%
+  ungroup()
+
+# 2. Vẽ biểu đồ tròn
+ggplot(gender_clean_df, aes(x = "", y = pct, fill = gender_lbl)) +
+  geom_col(width = 1, colour = "white", linewidth = 0.8) +
+  coord_polar(theta = "y") +
+  facet_wrap(~ Nhom) +
+  geom_text(
+    aes(label = lbl), 
+    position = position_stack(vjust = 0.5),
+    size = 3.8, 
+    colour = "white", 
+    fontface = "bold"
+  ) +
+  scale_fill_manual(
+    values = c("Nữ" = svw_orange, "Nam" = svw_green),
+    name = "Giới tính"
+  ) +
+  labs(
+    title = "Phân bố giới tính người tham gia", 
+    x = NULL, 
+    y = NULL
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5, margin = margin(b = 10)),
+    strip.text = element_text(face = "bold", size = 12),
+    legend.position = "bottom"
+  )
+```
+# 4.2. Mức tăng điểm chuẩn hoá (Normalized Gain) theo giới tính
+```{r}
+#| echo: false
+
+gain_summary <- paired_df %>%
+  filter(gender %in% c("female", "male")) %>%
+  mutate(
+    gain_score = (post_percent_correct - pre_percent) / (100 - pre_percent),
+    gain_score = ifelse(pre_percent == 100 & post_percent_correct == 100, 1, gain_score)
+  ) %>%
+  group_by(gender) %>%
+  summarise(
+    n = n(), 
+    mean_gain = mean(gain_score, na.rm = TRUE), 
+    sd_gain = sd(gain_score, na.rm = TRUE)
+  )
+
+kable(gain_summary, digits = 3, caption = "Normalized gain theo giới tính") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+# 4.3. Thay đổi nhận thức từng chủ đề theo giới tính
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+gender_topic_long <- paired_df %>%
+  filter(gender %in% c("female", "male")) %>%
+  transmute(
+    gender,
+    `Q10 Đa dạng SH_pre`   = s_q10  / 1 * 100, `Q10 Đa dạng SH_post`  = s_q3   / 1 * 100,
+    `Q14 Tuyệt chủng_pre`  = s_q14  / 1 * 100, `Q14 Tuyệt chủng_post` = s_q8b  / 1 * 100,
+    `Q15 Nguyên nhân_pre`  = s_q15  / 1 * 100, `Q15 Nguyên nhân_post` = s_q6   / 1 * 100,
+    `Q16 Hậu quả_pre`      = s_q16  / 2 * 100, `Q16 Hậu quả_post`     = s_q9b  / 1 * 100,
+    `Q17 Mức phạt_pre`     = s_q17  / 1 * 100, `Q17 Mức phạt_post`    = s_q10b / 1 * 100,
+    `Q18 Vi phạm_pre`      = s_q18  / 1 * 100, `Q18 Vi phạm_post`     = s_q11b / 1 * 100,
+    `Q19 Hành động_pre`    = s_q19  / 5 * 100, `Q19 Hành động_post`   = s_q12b / 1 * 100
+  ) %>%
+  pivot_longer(-gender, names_to = "raw_question", values_to = "score") %>%
+  separate(raw_question, into = c("question", "stage"), sep = "_") %>%
+  group_by(question, stage, gender) %>%
+  summarise(mean_pct = mean(score, na.rm = TRUE), n = n(), .groups = "drop") %>%
+  mutate(stage = factor(stage, levels = c("pre", "post"), labels = c("Trước (Pre)", "Sau (Post)")))
+
+gender_topic_wide <- gender_topic_long %>%
+  pivot_wider(names_from = stage, values_from = mean_pct) %>%
+  mutate(
+    Delta = `Sau (Post)` - `Trước (Pre)`,
+    `Trước (Pre)` = paste0(round(`Trước (Pre)`, 1), "%"),
+    `Sau (Post)`  = paste0(round(`Sau (Post)`, 1), "%"),
+    Delta         = paste0(ifelse(Delta > 0, "+", ""), round(Delta, 1), "%")
+  ) %>%
+  select(question, gender, `Trước (Pre)`, `Sau (Post)`, Delta, n)
+
+kable(gender_topic_wide, format = "markdown",
+      col.names = c("Chủ đề câu hỏi", "Giới tính", "Trước (Pre)", "Sau (Post)", "Chênh lệch (Delta)", "Cỡ mẫu (n)"),
+      align = "lccccc")
+
+#| echo: false
+#| fig-cap: "Thay đổi nhận thức từng chủ đề theo giới tính (Pre vs Post)"
+#| fig-width: 9
+#| fig-height: 6
+
+ggplot(gender_topic_long, aes(x = stage, y = mean_pct, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.75), width = 0.65, alpha = 0.9) +
+  facet_wrap(~ question, ncol = 3, scales = "free_y") +
+  scale_fill_manual(values = c("female" = "#DFC27D", "male" = "#35978F"),
+                    labels = c("Nữ (Female)", "Nam (Male)")) +
+  geom_text(aes(label = paste0(round(mean_pct, 1), "%")),
+            position = position_dodge(width = 0.75), vjust = -0.4, size = 2.8,
+            fontface = "bold", color = "grey30") +
+  labs(title = "Sự thay đổi nhận thức từng chủ đề theo Giới tính (Pre vs Post)",
+       subtitle = "Khảo sát tại Mobile Nature Centre",
+       x = NULL, y = "Điểm trung bình (%)", fill = "Giới tính:") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  theme_minimal(base_family = "sans") +
+  theme(
+    strip.background = element_rect(fill = "grey95", color = "grey90"),
+    strip.text = element_text(face = "bold", size = 9.5, color = "grey20"),
+    plot.title = element_text(face = "bold", size = 13, color = "grey10"),
+    plot.subtitle = element_text(size = 10, color = "grey40", face = "italic"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    panel.spacing = unit(1, "lines")
+  )
+```
+# 4.4. So sánh tỷ lệ trả lời đúng bài Pre-Test theo giới tính
+```{r}
+#| echo: false
+#| fig-cap: "Tỷ lệ trả lời đúng các câu hỏi Pre-test theo giới tính (toàn bộ mẫu Pre)"
+#| fig-width: 8
+#| fig-height: 4.5
+
+k_pre_long <- pre_raw %>%
+  select(gender, s_q9, s_q10, s_q11, s_q14, s_q15, s_q16, s_q17, s_q18, s_q19) %>%
+  filter(gender %in% c("female", "male")) %>%
+  pivot_longer(-gender, names_to = "question", values_to = "score") %>%
+  filter(!is.na(score)) %>%
+  group_by(question, gender) %>%
+  summarise(pct = mean(score > 0, na.rm = TRUE) * 100, n = n(), .groups = "drop") %>%
+  mutate(question = recode(question,
+    s_q9  = "Q9 Tiêu thụ",       s_q10 = "Q10 Đa dạng SH",
+    s_q11 = "Q11 Vai trò ĐVHD",  s_q14 = "Q14 Tuyệt chủng",
+    s_q15 = "Q15 Nguyên nhân",   s_q16 = "Q16 Hậu quả",
+    s_q17 = "Q17 Mức phạt",      s_q18 = "Q18 Vi phạm",
+    s_q19 = "Q19 Can thiệp bảo vệ"
+  ))
+
+ggplot(k_pre_long, aes(x = question, y = pct, fill = gender)) +
+  geom_col(position = position_dodge(width = .8), width = .7) +
+  geom_text(aes(label = sprintf("%.1f%%", pct)),
+            position = position_dodge(width = .8), vjust = -.5, size = 3) +
+  scale_fill_brewer(palette = "Set2", name = "Giới tính") +
+  ylim(0, 110) +
+  labs(title = "Tỷ lệ trả lời đúng các câu hỏi Pre-test theo giới tính",
+       subtitle = "Trung tâm Thiên nhiên lưu động - SVW",
+       x = "Câu hỏi khảo sát", y = "Tỷ lệ trả lời đúng (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        panel.grid.minor = element_blank())
+```

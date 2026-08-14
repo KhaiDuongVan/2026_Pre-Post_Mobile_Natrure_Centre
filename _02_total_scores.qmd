@@ -1,0 +1,29 @@
+# PHẦN 2: KẾT QUẢ TỔNG ĐIỂM PRE VS POST {#sec-total}
+```{r total-test}
+total_result <- paired_test(paired_df$pre_percent, paired_df$post_percent_correct, "Tổng điểm kiến thức (%)")
+kable(total_result, digits = 3,
+      caption = "Kiểm định Wilcoxon bắt cặp — Tổng điểm Pre vs Post (n = 18)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+#| fig-cap: "Phân phối điểm Pre vs Post, kèm đường nối từng cặp (n = 18, dữ liệu thật)"
+score_long <- paired_df %>%
+  select(user_id, pre_percent, post_percent_correct) %>%
+  pivot_longer(cols = c(pre_percent, post_percent_correct), names_to = "stage", values_to = "pct") %>%
+  mutate(stage = factor(stage, levels = c("pre_percent", "post_percent_correct"), labels = c("PRE", "POST")))
+
+ggplot(score_long, aes(x = stage, y = pct, fill = stage)) +
+  geom_boxplot(alpha = .7, width = .45, outlier.shape = NA) +
+  geom_jitter(aes(colour = stage), width = .08, alpha = .7, size = 2.6) +
+  geom_line(aes(group = user_id), colour = "grey60", alpha = .35) +
+  scale_fill_manual(values = c(PRE = svw_pre, POST = svw_post)) +
+  scale_colour_manual(values = c(PRE = svw_pre, POST = svw_post)) +
+  annotate("text", x = 1.5, y = max(score_long$pct, na.rm = TRUE) * 1.08,
+           label = paste0(
+             "Wilcoxon p = ", total_result$p_value,
+             "\nCohen's d = ", total_result$Effect_d, " (", tolower(total_result$Interpretation), ")"
+           ),
+           size = 3.6, fontface = "italic") +
+  labs(x = NULL, y = "Điểm % kiến thức",
+       title = "Tổng điểm Pre vs Post — Mobile Nature Centre (n = 18)") +
+  theme_svw + theme(legend.position = "none")
+```

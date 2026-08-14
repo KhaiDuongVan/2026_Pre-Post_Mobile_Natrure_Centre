@@ -1,0 +1,74 @@
+# PHẦN 0: ĐƯỜNG DẪN FILE {#sec-path}
+```{r setup-config}
+#| include: false
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(effsize)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(broom)
+library(gt)
+
+svw_green  <- "#2E7D32"
+svw_orange <- "#E65100"
+svw_pre    <- svw_orange
+svw_post   <- svw_green
+
+theme_svw <- theme_classic() +
+  theme(
+    plot.title    = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 10, colour = "grey30"),
+    axis.title    = element_text(face = "bold")
+  )
+
+# Hàm kiểm định Wilcoxon bắt cặp + Cohen's d dùng chung
+paired_test <- function(pre_vec, post_vec, var_name = "") {
+  df_p <- data.frame(pre = as.numeric(pre_vec), post = as.numeric(post_vec)) %>%
+    filter(!is.na(pre), !is.na(post))
+
+  if (nrow(df_p) < 5) {
+    return(data.frame(
+      Variable = var_name, n = nrow(df_p),
+      Mean_pre = NA, Mean_post = NA, Delta = NA,
+      W = NA, p_value = NA, Effect_d = NA,
+      Interpretation = "n quá nhỏ để kiểm định"
+    ))
+  }
+
+  wt <- suppressWarnings(wilcox.test(df_p$post, df_p$pre, paired = TRUE, exact = FALSE))
+  d  <- effsize::cohen.d(df_p$post, df_p$pre, paired = TRUE)
+
+  interp <- dplyr::case_when(
+    wt$p.value >= 0.05    ~ "Không có ý nghĩa thống kê",
+    abs(d$estimate) < 0.2 ~ "Có ý nghĩa, hiệu ứng rất nhỏ",
+    abs(d$estimate) < 0.5 ~ "Có ý nghĩa, hiệu ứng nhỏ",
+    abs(d$estimate) < 0.8 ~ "Có ý nghĩa, hiệu ứng trung bình",
+    TRUE                  ~ "Có ý nghĩa, hiệu ứng lớn"
+  )
+
+  data.frame(
+    Variable = var_name, n = nrow(df_p),
+    Mean_pre  = round(mean(df_p$pre), 2),
+    Mean_post = round(mean(df_p$post), 2),
+    Delta     = round(mean(df_p$post) - mean(df_p$pre), 2),
+    W = round(unname(wt$statistic), 1),
+    p_value = round(wt$p.value, 4),
+    Effect_d = round(unname(d$estimate), 3),
+    Interpretation = interp,
+    stringsAsFactors = FALSE
+  )
+}
+
+path_mnc <- "E:/OneDrive - Save Vietnam's Wildlife/Research/Data sheet/26_Mobile_Nature_Centre_Ninh_Binh.csv"
+
+stopifnot(
+  "Không tìm thấy file dữ liệu — kiểm tra lại path_mnc phía trên" = file.exists(path_mnc)
+)
+```
